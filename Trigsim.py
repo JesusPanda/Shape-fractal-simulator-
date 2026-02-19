@@ -110,7 +110,7 @@ def reset_and_build_base(angle_deg: ti.f32):
 
 # ---------- one-level expansion on GPU ----------
 @ti.kernel
-def expand_once(current_buf: ti.i32, next_buf: ti.i32, count: ti.i32):
+def expand_once(current_buf: ti.i32, next_buf: ti.i32, count: ti.i32, base_seg_idx: ti.i32, base_hyp_idx: ti.i32):
     for i in range(count):
         R  = node_R[current_buf, i]
         H0 = node_H0[current_buf, i]
@@ -122,12 +122,12 @@ def expand_once(current_buf: ti.i32, next_buf: ti.i32, count: ti.i32):
         H1p = H1 + v
 
         # connectors
-        sidx = ti.atomic_add(seg_count[None], 2)
+        sidx = base_seg_idx + i * 2
         seg_begin[sidx], seg_end[sidx] = H0, H0p
         seg_begin[sidx+1], seg_end[sidx+1] = H1, H1p
 
         # hypotenuses: translated and the two child ones
-        hidx = ti.atomic_add(hyp_count[None], 3)
+        hidx = base_hyp_idx + i * 3
         hyp_begin[hidx],   hyp_end[hidx]   = H0p, H1p
         hyp_begin[hidx+1], hyp_end[hidx+1] = R, H0
         hyp_begin[hidx+2], hyp_end[hidx+2] = R, H1
@@ -243,13 +243,17 @@ while gui.running:
     # rebuild on change using GPU kernels
     if angle_key != last_angle_key or depth != last_depth:
         reset_and_build_base(angle_deg)
+        cpu_seg_count, cpu_hyp_count = 3, 1
         count = 1
         current_buf, next_buf = 0, 1
         for _ in range(depth):
-            expand_once(current_buf, next_buf, count)
+            expand_once(current_buf, next_buf, count, cpu_seg_count, cpu_hyp_count)
+            cpu_seg_count += count * 2
+            cpu_hyp_count += count * 3
             count *= 2
             node_count[None] = count
             current_buf, next_buf = next_buf, current_buf # swap buffers
+        seg_count[None], hyp_count[None] = cpu_seg_count, cpu_hyp_count
         last_angle_key, last_depth = angle_key, depth
 
     # transform geometry for drawing
