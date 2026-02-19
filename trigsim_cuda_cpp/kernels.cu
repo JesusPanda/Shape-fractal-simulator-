@@ -137,6 +137,8 @@ void init_memory(SimData& data) {
     CUDA_CHECK(cudaMallocManaged(&data.A_pt, sizeof(float2)));
     CUDA_CHECK(cudaMallocManaged(&data.B_pt, sizeof(float2)));
     CUDA_CHECK(cudaMallocManaged(&data.C_pt, sizeof(float2)));
+    CUDA_CHECK(cudaMallocManaged(&data.gl_segments, SEG_CAP * 2 * sizeof(SimVertex)));
+    CUDA_CHECK(cudaMallocManaged(&data.gl_hypotenuses, HYPO_CAP * 2 * sizeof(SimVertex)));
 }
 
 void free_memory(SimData& data) {
@@ -155,6 +157,8 @@ void free_memory(SimData& data) {
     CUDA_CHECK(cudaFree(data.A_pt));
     CUDA_CHECK(cudaFree(data.B_pt));
     CUDA_CHECK(cudaFree(data.C_pt));
+    CUDA_CHECK(cudaFree(data.gl_segments));
+    CUDA_CHECK(cudaFree(data.gl_hypotenuses));
 }
 
 // --- Kernel Launchers ---
@@ -182,4 +186,55 @@ void get_abc_points(const SimData& data, float2& a, float2& b, float2& c) {
     a = *data.A_pt;
     b = *data.B_pt;
     c = *data.C_pt;
+}
+// --- Visualization Kernel ---
+__global__ void visualization_kernel(SimData data, float2 center, float zoom, int2 win_size, int seg_c, int hyp_c) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Process Segments
+    if (i < seg_c) {
+        float2 p1 = data.seg_begin[i];
+        float2 p2 = data.seg_end[i];
+
+        float x1 = (p1.x - center.x) * zoom * win_size.x + (win_size.x / 2.0f);
+        float y1 = (p1.y - center.y) * zoom * win_size.y + (win_size.y / 2.0f);
+        float x2 = (p2.x - center.x) * zoom * win_size.x + (win_size.x / 2.0f);
+        float y2 = (p2.y - center.y) * zoom * win_size.y + (win_size.y / 2.0f);
+
+        data.gl_segments[2*i].pos = make_float2(x1, y1);
+        data.gl_segments[2*i].color = make_uchar4(221, 221, 221, 255);
+        data.gl_segments[2*i].tex = make_float2(0,0);
+
+        data.gl_segments[2*i+1].pos = make_float2(x2, y2);
+        data.gl_segments[2*i+1].color = make_uchar4(221, 221, 221, 255);
+        data.gl_segments[2*i+1].tex = make_float2(0,0);
+    }
+
+    // Process Hypotenuses
+    if (i < hyp_c) {
+        float2 p1 = data.hyp_begin[i];
+        float2 p2 = data.hyp_end[i];
+
+        float x1 = (p1.x - center.x) * zoom * win_size.x + (win_size.x / 2.0f);
+        float y1 = (p1.y - center.y) * zoom * win_size.y + (win_size.y / 2.0f);
+        float x2 = (p2.x - center.x) * zoom * win_size.x + (win_size.x / 2.0f);
+        float y2 = (p2.y - center.y) * zoom * win_size.y + (win_size.y / 2.0f);
+
+        data.gl_hypotenuses[2*i].pos = make_float2(x1, y1);
+        data.gl_hypotenuses[2*i].color = make_uchar4(176, 196, 222, 255);
+        data.gl_hypotenuses[2*i].tex = make_float2(0,0);
+
+        data.gl_hypotenuses[2*i+1].pos = make_float2(x2, y2);
+        data.gl_hypotenuses[2*i+1].color = make_uchar4(176, 196, 222, 255);
+        data.gl_hypotenuses[2*i+1].tex = make_float2(0,0);
+    }
+}
+
+void update_visualization_launcher(const SimData& data, float2 cam_center, float cam_zoom, int2 win_size, int seg_c, int hyp_c) {
+    int count = max(seg_c, hyp_c);
+    if (count == 0) return;
+    int threads = 256;
+    int blocks = (count + threads - 1) / threads;
+    visualization_kernel<<<blocks, threads>>>(data, cam_center, cam_zoom, win_size, seg_c, hyp_c);
+    CUDA_CHECK(cudaDeviceSynchronize());
 }
