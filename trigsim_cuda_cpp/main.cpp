@@ -131,30 +131,16 @@ int main() {
         seg_c = std::min(seg_c, (int)SEG_CAP);
         hyp_c = std::min(hyp_c, (int)HYPO_CAP);
 
-        // Prepare vertex arrays
-        sf::VertexArray segments(sf::Lines, seg_c * 2);
-        sf::VertexArray hypotenuses(sf::Lines, hyp_c * 2);
-
         sf::Vector2u win_size = window.getSize();
 
-        // Segments
-        for (int i = 0; i < seg_c; ++i) {
-            segments[i * 2].position = to_screen(gpu_data.seg_begin[i], camera, win_size);
-            segments[i * 2].color = sf::Color(221, 221, 221);
-            segments[i * 2 + 1].position = to_screen(gpu_data.seg_end[i], camera, win_size);
-            segments[i * 2 + 1].color = sf::Color(221, 221, 221);
-        }
+        // Launch GPU kernel to update visualization buffers
+        update_visualization_launcher(gpu_data, make_float2(camera.center.x, camera.center.y), camera.zoom, make_int2(win_size.x, win_size.y), seg_c, hyp_c);
 
-        // Hypotenuses
-        for (int i = 0; i < hyp_c; ++i) {
-            hypotenuses[i * 2].position = to_screen(gpu_data.hyp_begin[i], camera, win_size);
-            hypotenuses[i * 2].color = sf::Color(176, 196, 222);
-            hypotenuses[i * 2 + 1].position = to_screen(gpu_data.hyp_end[i], camera, win_size);
-            hypotenuses[i * 2 + 1].color = sf::Color(176, 196, 222);
-        }
-
-        window.draw(segments);
-        window.draw(hypotenuses);
+        // Draw directly from GPU/Managed memory
+        if (seg_c > 0)
+            window.draw(reinterpret_cast<sf::Vertex*>(gpu_data.gl_segments), seg_c * 2, sf::Lines);
+        if (hyp_c > 0)
+            window.draw(reinterpret_cast<sf::Vertex*>(gpu_data.gl_hypotenuses), hyp_c * 2, sf::Lines);
 
         // Draw A,B,C markers
         float2 a, b, c;
