@@ -57,6 +57,10 @@ int main() {
     // --- Initialize GPU Memory ---
     init_memory(gpu_data);
 
+    // --- Persistent Vertex Arrays (Reused across frames) ---
+    sf::VertexArray segments(sf::Lines);
+    sf::VertexArray hypotenuses(sf::Lines);
+
     // --- Main Loop ---
     while (window.isOpen()) {
         // --- Event Handling ---
@@ -131,9 +135,9 @@ int main() {
         seg_c = std::min(seg_c, (int)SEG_CAP);
         hyp_c = std::min(hyp_c, (int)HYPO_CAP);
 
-        // Prepare vertex arrays
-        sf::VertexArray segments(sf::Lines, seg_c * 2);
-        sf::VertexArray hypotenuses(sf::Lines, hyp_c * 2);
+        // Resize persistent vertex arrays
+        segments.resize(seg_c * 2);
+        hypotenuses.resize(hyp_c * 2);
 
         sf::Vector2u win_size = window.getSize();
 
