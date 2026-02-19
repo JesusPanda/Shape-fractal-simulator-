@@ -1,4 +1,5 @@
-# Recursive right-triangle viewer — CUDA GPU + Taichi kernels
+
+content = r"""# Recursive right-triangle viewer — CUDA GPU + Taichi kernels
 # Changes vs Vulkan version:
 #   • Force CUDA backend: ti.init(arch=ti.cuda)
 #   • Capacity math fixed for max depth so buffers never overflow.
@@ -343,3 +344,7 @@ while window.running:
         gui.text("Type digits to set iterations")
 
     window.show()
+"""
+
+with open("Trigsim.py", "w") as f:
+    f.write(content)
