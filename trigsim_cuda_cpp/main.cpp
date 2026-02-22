@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <filesystem>
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 
@@ -28,7 +30,33 @@ void draw_text(sf::RenderWindow& window, const std::string& str, const sf::Font&
     window.draw(text);
 }
 
-int main() {
+// --- Font Discovery Helper ---
+static std::string find_font_path(int argc, char* argv[]) {
+    // 1. Check command line arguments
+    for (int i = 1; i < argc - 1; ++i) {
+        if (std::string(argv[i]) == "--font") {
+            return argv[i + 1];
+        }
+    }
+
+    // 2. Check environment variable
+    const char* env_p = std::getenv("TRIGSIM_FONT");
+    if (env_p) return std::string(env_p);
+
+    // 3. Local directory
+    std::vector<std::string> local_paths = {"DejaVuSans.ttf"};
+    for (const auto& p : local_paths) {
+        if (std::filesystem::exists(p)) return p;
+    }
+
+    // 4. Fallback to original system path
+    std::string fallback = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf";
+    if (std::filesystem::exists(fallback)) return fallback;
+
+    return "";
+}
+
+int main(int argc, char* argv[]) {
     // --- Window and SFML Setup ---
     const unsigned int WIN_WIDTH = 1200, WIN_HEIGHT = 1200;
     sf::RenderWindow window(sf::VideoMode(WIN_WIDTH, WIN_HEIGHT), "Recursive Right-Triangle (CUDA C++)", sf::Style::Titlebar | sf::Style::Close);
@@ -36,9 +64,11 @@ int main() {
 
     sf::Font font;
     // Note: This requires a font file to be available.
-    // Let's try a common path. If it fails, text will not render.
-    if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")) {
+    // Use the discovery helper to find a font path.
+    std::string font_path = find_font_path(argc, argv);
+    if (font_path.empty() || !font.loadFromFile(font_path)) {
         std::cerr << "Warning: Could not load font. HUD will not be displayed." << std::endl;
+        if (!font_path.empty()) std::cerr << "Attempted path: " << font_path << std::endl;
     }
 
     // --- Simulation State ---
