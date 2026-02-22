@@ -165,6 +165,7 @@ int main(int argc, char* argv[]) {
 
         // Launch GPU kernel to update visualization buffers
         update_visualization_launcher(gpu_data, make_float2(camera.center.x, camera.center.y), camera.zoom, make_int2(win_size.x, win_size.y), seg_c, hyp_c);
+        device_synchronize();
 
         // Draw directly from GPU/Managed memory
         if (seg_c > 0)
