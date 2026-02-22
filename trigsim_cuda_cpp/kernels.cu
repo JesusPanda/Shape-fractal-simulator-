@@ -164,9 +164,7 @@ void free_memory(SimData& data) {
 // --- Kernel Launchers ---
 void reset_and_build_base_launcher(const SimData& data, float angle_deg) {
     reset_kernel<<<1, 1>>>(data);
-    CUDA_CHECK(cudaDeviceSynchronize());
     build_base_kernel<<<1, 1>>>(data, angle_deg);
-    CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 void expand_once_launcher(const SimData& data, int current_buf, int next_buf, int count) {
@@ -174,15 +172,16 @@ void expand_once_launcher(const SimData& data, int current_buf, int next_buf, in
     int threads = 256;
     int blocks = (count + threads - 1) / threads;
     expand_kernel<<<blocks, threads>>>(data, current_buf, next_buf, count);
-    CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 void get_counts(const SimData& data, int& seg_c, int& hyp_c) {
+    CUDA_CHECK(cudaDeviceSynchronize());
     seg_c = *data.seg_count;
     hyp_c = *data.hyp_count;
 }
 
 void get_abc_points(const SimData& data, float2& a, float2& b, float2& c) {
+    CUDA_CHECK(cudaDeviceSynchronize());
     a = *data.A_pt;
     b = *data.B_pt;
     c = *data.C_pt;
