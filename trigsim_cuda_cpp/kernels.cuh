@@ -65,3 +65,7 @@ void get_abc_points(const SimData& data, float2& a, float2& b, float2& c);
 
 // Updates the visualization buffers (screen coordinates and colors).
 void update_visualization_launcher(const SimData& data, float2 cam_center, float cam_zoom, int2 win_size, int seg_c, int hyp_c);
+
+// Explicitly synchronize the CPU with the GPU.
+// Required before accessing managed memory on the host after an asynchronous kernel launch.
+void device_synchronize();

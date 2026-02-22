@@ -235,5 +235,8 @@ void update_visualization_launcher(const SimData& data, float2 cam_center, float
     int threads = 256;
     int blocks = (count + threads - 1) / threads;
     visualization_kernel<<<blocks, threads>>>(data, cam_center, cam_zoom, win_size, seg_c, hyp_c);
+}
+
+void device_synchronize() {
     CUDA_CHECK(cudaDeviceSynchronize());
 }
