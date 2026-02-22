@@ -147,6 +147,7 @@ zoom_anchor = None
 ZOOM_STEP = 1.02
 ZOOM_MIN, ZOOM_MAX = 0.2, 50.0
 SMOOTH_ZOOM_RATE = 12.0
+ZOOM_ALPHA = 1.0 - math.exp(-SMOOTH_ZOOM_RATE * (1.0 / 60.0)) # assume 60fps
 
 @ti.kernel
 def transform_to_screen(
@@ -232,8 +233,7 @@ while gui.running:
 
     # smooth zoom step
     prev_zoom = zoom
-    alpha = 1.0 - math.exp(-SMOOTH_ZOOM_RATE * (1.0 / 60.0)) # assume 60fps
-    zoom += (zoom_target - zoom) * alpha
+    zoom += (zoom_target - zoom) * ZOOM_ALPHA
     if zoom_anchor is not None and abs(zoom - prev_zoom) > 1e-9:
         wx, wy = (zoom_anchor - 0.5) / prev_zoom + cam_center
         cam_center = ti.Vector([wx - (zoom_anchor.x - 0.5) / zoom, wy - (zoom_anchor.y - 0.5) / zoom])
