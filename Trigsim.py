@@ -182,6 +182,7 @@ seg_end_screen = ti.Vector.field(2, ti.f32, shape=SEG_CAP)
 hyp_begin_screen = ti.Vector.field(2, ti.f32, shape=HYPO_CAP)
 hyp_end_screen = ti.Vector.field(2, ti.f32, shape=HYPO_CAP)
 abc_pts_screen = ti.Vector.field(2, ti.f32, shape=3)
+abc_pts = ti.Vector.field(2, ti.f32, shape=3)
 
 while gui.running:
     frame_start = time.time()
@@ -267,7 +268,6 @@ while gui.running:
         transform_to_screen(hyp_end, hyp_end_screen, cam_center, zoom, hc)
 
     # transform A,B,C markers
-    abc_pts = ti.Vector.field(2, ti.f32, shape=3)
     abc_pts[0], abc_pts[1], abc_pts[2] = A_pt[None], B_pt[None], C_pt[None]
     transform_to_screen(abc_pts, abc_pts_screen, cam_center, zoom, 3)
 
